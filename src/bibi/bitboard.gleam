@@ -1,36 +1,13 @@
 //// The bibi/bitboard module provides the ability to create and manipulate bitboards
 
 import gleam/bool
-import gleam/list
-
 import gleam/int
+import gleam/list
 
 import bibi/coords.{type Coords}
 
 pub type Bitboard {
   Bitboard(width: Int, height: Int, val: Int)
-}
-
-pub fn from_coords(
-  width: Int,
-  height: Int,
-  coords: Coords,
-) -> Result(Bitboard, String) {
-  use <- bool.guard(width < 0, Error("width must be positive"))
-  use <- bool.guard(height < 0, Error("height must be positive"))
-  use <- bool.guard(coords.x < 0, Error("Coords.x must be positive"))
-  use <- bool.guard(coords.y < 0, Error("Coords.y must be positive"))
-  use <- bool.guard(
-    coords.x >= width,
-    Error("Coords.x must be less than width"),
-  )
-  use <- bool.guard(
-    coords.y >= height,
-    Error("Coords.y must be less than height"),
-  )
-
-  let val = int.bitwise_shift_left(1, width * coords.y + coords.x)
-  Ok(Bitboard(width, height, val))
 }
 
 fn validate_coords(
@@ -50,6 +27,23 @@ fn validate_coords(
   )
 
   Ok(Nil)
+}
+
+pub fn from_coords(
+  width: Int,
+  height: Int,
+  coords: Coords,
+) -> Result(Bitboard, String) {
+  use <- bool.guard(width < 0, Error("width must be positive"))
+  use <- bool.guard(height < 0, Error("height must be positive"))
+  let result = validate_coords(coords, width, height)
+  case result {
+    Ok(_) -> {
+      let val = int.bitwise_shift_left(1, width * coords.y + coords.x)
+      Ok(Bitboard(width, height, val))
+    }
+    Error(message) -> Error(message)
+  }
 }
 
 fn validate_coords_list(
@@ -93,6 +87,7 @@ pub fn from_list_of_coords(
   }
 }
 
+// Get single row mask
 fn first_row(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   case counter >= bitboard.width {
     True -> Bitboard(..bitboard, val: val)
@@ -118,6 +113,7 @@ pub fn row(bitboard: Bitboard, row_no: Int) -> Result(Bitboard, String) {
   Ok(Bitboard(..bitboard, val: row))
 }
 
+// Get single column mask
 fn first_col(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   case counter >= bitboard.height {
     True -> Bitboard(..bitboard, val: val)
