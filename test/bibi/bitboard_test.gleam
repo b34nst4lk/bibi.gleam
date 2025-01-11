@@ -137,3 +137,113 @@ pub fn fail_to_create_col_from_bitboard_test() {
     should.equal(result, Error(test_case.4))
   })
 }
+
+// Test `and` operator on bitboard
+pub fn successfuly_apply_and_on_bitboards_test() {
+  let test_cases = [
+    #(
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1), Coords(0, 2)]),
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1)]),
+      "010",
+    ),
+    #(
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0), Coords(2, 0)]),
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0)]),
+      "010",
+    ),
+    #(
+      bitboard.from_list_of_coords(3, 4, [
+        Coords(1, 0),
+        Coords(2, 0),
+        Coords(1, 1),
+      ]),
+      bitboard.from_list_of_coords(3, 4, [Coords(1, 0), Coords(2, 0)]),
+      "000000000110",
+    ),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b1) = test_case.0
+    let assert Ok(b2) = test_case.1
+    let assert Ok(result) = bitboard.and(b1, b2)
+    let assert Ok(expected) = int.base_parse(test_case.2, 2)
+    should.equal(result.val, expected)
+  })
+}
+
+pub fn fail_to_apply_and_on_bitboards_test() {
+  let test_cases = [
+    #(
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1), Coords(0, 2)]),
+      bitboard.from_list_of_coords(1, 2, [Coords(0, 1)]),
+      "bitboard heights must be equal",
+    ),
+    #(
+      bitboard.from_list_of_coords(4, 1, [Coords(1, 0), Coords(2, 0)]),
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0)]),
+      "bitboard widths must be equal",
+    ),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b1) = test_case.0
+    let assert Ok(b2) = test_case.1
+    let assert Error(result) = bitboard.and(b1, b2)
+    should.equal(result, test_case.2)
+  })
+}
+
+// Test `or` operator on bitboard
+pub fn successfuly_apply_or_on_bitboards_test() {
+  let test_cases = [
+    #(
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1), Coords(0, 2)]),
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1)]),
+      "110",
+    ),
+    #(
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0), Coords(2, 0)]),
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0)]),
+      "110",
+    ),
+    #(
+      bitboard.from_list_of_coords(3, 4, [
+        Coords(1, 0),
+        Coords(2, 0),
+        Coords(1, 1),
+      ]),
+      bitboard.from_list_of_coords(3, 4, [Coords(1, 0), Coords(2, 0)]),
+      "000000010110",
+    ),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b1) = test_case.0
+    let assert Ok(b2) = test_case.1
+    let assert Ok(result) = bitboard.or(b1, b2)
+    let assert Ok(expected) = int.base_parse(test_case.2, 2)
+    should.equal(result.val, expected)
+  })
+}
+
+pub fn fail_to_apply_or_on_bitboards_test() {
+  let test_cases = [
+    #(
+      bitboard.from_list_of_coords(1, 3, [Coords(0, 1), Coords(0, 2)]),
+      bitboard.from_list_of_coords(1, 2, [Coords(0, 1)]),
+      "bitboard heights must be equal",
+    ),
+    #(
+      bitboard.from_list_of_coords(4, 1, [Coords(1, 0), Coords(2, 0)]),
+      bitboard.from_list_of_coords(3, 1, [Coords(1, 0)]),
+      "bitboard widths must be equal",
+    ),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b1) = test_case.0
+    let assert Ok(b2) = test_case.1
+    let assert Error(result) = bitboard.or(b1, b2)
+    should.equal(result, test_case.2)
+  })
+}

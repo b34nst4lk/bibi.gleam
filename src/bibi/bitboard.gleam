@@ -138,3 +138,55 @@ pub fn col(bitboard: Bitboard, col_no: Int) -> Result(Bitboard, String) {
   let col = int.bitwise_shift_left(first_col.val, col_no)
   Ok(Bitboard(..bitboard, val: col))
 }
+
+// Bitboard operations
+fn validate_equal_dimensions(
+  bitboard_1: Bitboard,
+  bitboard_2: Bitboard,
+) -> Result(Nil, String) {
+  use <- bool.guard(
+    bitboard_1.width != bitboard_2.width,
+    Error("bitboard widths must be equal"),
+  )
+  use <- bool.guard(
+    bitboard_1.height != bitboard_2.height,
+    Error("bitboard heights must be equal"),
+  )
+  Ok(Nil)
+}
+
+pub fn and(
+  bitboard_1: Bitboard,
+  bitboard_2: Bitboard,
+) -> Result(Bitboard, String) {
+  case validate_equal_dimensions(bitboard_1, bitboard_2) {
+    Error(err) -> Error(err)
+    Ok(_) ->
+      Ok(
+        Bitboard(
+          ..bitboard_1,
+          val: int.bitwise_and(bitboard_1.val, bitboard_2.val),
+        ),
+      )
+  }
+}
+
+pub fn or(
+  bitboard_1: Bitboard,
+  bitboard_2: Bitboard,
+) -> Result(Bitboard, String) {
+  case validate_equal_dimensions(bitboard_1, bitboard_2) {
+    Error(err) -> Error(err)
+    Ok(_) ->
+      Ok(
+        Bitboard(
+          ..bitboard_1,
+          val: int.bitwise_or(bitboard_1.val, bitboard_2.val),
+        ),
+      )
+  }
+}
+
+pub fn not(bitboard: Bitboard) -> Bitboard {
+  todo
+}
