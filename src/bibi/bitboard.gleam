@@ -188,5 +188,9 @@ pub fn or(
 }
 
 pub fn not(bitboard: Bitboard) -> Bitboard {
-  todo
+  let full_board =
+    int.bitwise_shift_left(1, bitboard.width * bitboard.height) - 1
+
+  let val = int.bitwise_exclusive_or(bitboard.val, full_board)
+  Bitboard(..bitboard, val: val)
 }

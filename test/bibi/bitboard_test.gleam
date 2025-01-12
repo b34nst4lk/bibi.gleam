@@ -2,7 +2,7 @@ import gleam/int
 import gleam/list
 import gleeunit/should
 
-import bibi/bitboard
+import bibi/bitboard.{Bitboard}
 import bibi/coords.{Coords}
 
 // Test bitboard creation with single coords
@@ -245,5 +245,20 @@ pub fn fail_to_apply_or_on_bitboards_test() {
     let assert Ok(b2) = test_case.1
     let assert Error(result) = bitboard.or(b1, b2)
     should.equal(result, test_case.2)
+  })
+}
+
+// Test not operator
+pub fn successfully_apply_not_on_bitboard_test() {
+  let test_cases = [
+    #(5, 5, Coords(2, 2), "1111111111110111111111111"),
+    #(1, 1, Coords(0, 0), "0"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(bitboard) =
+      bitboard.from_coords(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.3, 2)
+    should.equal(bitboard.not(bitboard), Bitboard(..bitboard, val: expected))
   })
 }
