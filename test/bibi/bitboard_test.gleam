@@ -5,6 +5,18 @@ import gleeunit/should
 import bibi/bitboard.{Bitboard}
 import bibi/coords.{Coords}
 
+// Test bitboard creation from base2 string
+pub fn successfully_create_bitboard_from_base2_string_test() {
+  let test_cases = [#(3, 3, "111000000"), #(4, 3, "111000111")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(val) = int.base_parse(test_case.2, 2)
+    should.equal(b.val, val)
+  })
+}
+
 // Test bitboard creation with single coords
 pub fn successfully_create_bitboard_test() {
   let test_cases = [
@@ -69,6 +81,21 @@ pub fn fail_to_create_bitboard_test_from_coords_list() {
       bitboard.from_list_of_coords(test_case.0, test_case.1, test_case.2)
     should.be_error(result)
     should.equal(result, Error(test_case.3))
+  })
+}
+
+// Test converting bitboard to string representation
+pub fn successfully_bitboard_to_string_test() {
+  let test_cases = [
+    #(3, 3, "000111001", "000\n111\n100"),
+    #(3, 3, "100000001", "001\n000\n100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let val = bitboard.to_string(b)
+    should.equal(val, test_case.3)
   })
 }
 
@@ -260,5 +287,73 @@ pub fn successfully_apply_not_on_bitboard_test() {
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.3, 2)
     should.equal(bitboard.not(bitboard), Bitboard(..bitboard, val: expected))
+  })
+}
+
+// Test shift down
+pub fn successfully_shift_down_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "111000000", 2, "000000111"),
+    #(3, 3, "111000000", 1, "000111000"),
+    #(3, 3, "000000111", 1, "000000000"),
+    #(4, 3, "100010001000", 1, "000010001000"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_down(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+// Test shift up
+pub fn successfully_shift_up_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 2, "111000000"),
+    #(3, 3, "000000111", 1, "000111000"),
+    #(3, 3, "111000000", 1, "000000000"),
+    #(4, 3, "100010001000", 1, "100010000000"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_up(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_up_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 10, "shift_up by must be < bitboard.height"),
+    #(3, 3, "000000111", 3, "shift_up by must be < bitboard.height"),
+    #(3, 3, "000000111", -1, "shift_up by must be >= 0"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_up(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test flip vertically
+pub fn successfully_flip_vertically_test() {
+  let test_cases = [
+    #(3, 3, "000000111", "111000000"),
+    #(3, 3, "000111000", "000111000"),
+    #(3, 3, "100000001", "001000100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.3, 2)
+    let updated_bitboard = bitboard.flip_vertically(b)
+    should.equal(updated_bitboard.val, expected)
   })
 }
