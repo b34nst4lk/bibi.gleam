@@ -296,6 +296,7 @@ pub fn successfully_shift_down_bitboard_test() {
     #(3, 3, "111000000", 2, "000000111"),
     #(3, 3, "111000000", 1, "000111000"),
     #(3, 3, "000000111", 1, "000000000"),
+    #(3, 3, "000000111", 0, "000000111"),
     #(4, 3, "100010001000", 1, "000010001000"),
   ]
   test_cases
@@ -305,6 +306,21 @@ pub fn successfully_shift_down_bitboard_test() {
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
     let assert Ok(updated_bitboard) = bitboard.shift_down(b, test_case.3)
     should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_down_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 10, "shift_down by must be < bitboard.height"),
+    #(3, 3, "000000111", 3, "shift_down by must be < bitboard.height"),
+    #(3, 3, "000000111", -1, "shift_down by must be >= 0"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_down(b, test_case.3)
+    should.equal(result, Error(test_case.4))
   })
 }
 
@@ -337,6 +353,72 @@ pub fn fail_to_shift_up_bitboard_test() {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let result = bitboard.shift_up(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test shift left
+pub fn successfully_shift_left_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 2, "000000001"),
+    #(3, 3, "000000111", 1, "000000011"),
+    #(3, 3, "111000000", 1, "011000000"),
+    #(4, 3, "100010001000", 1, "010001000100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_left(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_left_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 10, "shift_left by must be < bitboard.width"),
+    #(3, 3, "000000111", 3, "shift_left by must be < bitboard.width"),
+    #(3, 3, "000000111", -1, "shift_left by must be >= 0"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_left(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+//Test shift right
+pub fn successfully_shift_right_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 2, "000000100"),
+    #(3, 3, "000000111", 1, "000000110"),
+    #(3, 3, "111000000", 1, "110000000"),
+    #(4, 3, "100010001000", 1, "000000000000"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_right(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_right_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000000111", 10, "shift_right by must be < bitboard.width"),
+    #(3, 3, "000000111", 3, "shift_right by must be < bitboard.width"),
+    #(3, 3, "000000111", -1, "shift_right by must be >= 0"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_right(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }

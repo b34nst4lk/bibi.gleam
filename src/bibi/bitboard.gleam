@@ -235,12 +235,13 @@ pub fn not(bitboard: Bitboard) -> Bitboard {
 
 // Shifts
 pub fn shift_up(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+  use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_up by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.height,
     Error("shift_up by must be < bitboard.height"),
   )
-  use <- bool.guard(i == 0, Ok(bitboard))
+
   let mask =
     list.range(bitboard.height - 1, bitboard.height - i)
     |> list.fold(0, fn(m, i) {
@@ -253,14 +254,52 @@ pub fn shift_up(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
 }
 
 pub fn shift_down(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+  use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_down by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.height,
     Error("shift_down by must be < bitboard.height"),
   )
-  use <- bool.guard(i == 0, Ok(bitboard))
 
   let val = bitboard.val |> int.bitwise_shift_right(i * bitboard.width)
+  Ok(Bitboard(..bitboard, val: val))
+}
+
+pub fn shift_left(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_left by must be >= 0"))
+  use <- bool.guard(
+    i >= bitboard.width,
+    Error("shift_left by must be < bitboard.width"),
+  )
+
+  let mask =
+    list.range(0, i - 1)
+    |> list.fold(0, fn(m, i) {
+      let assert Ok(r) = col(bitboard, i)
+      int.bitwise_or(m, r.val)
+    })
+  let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
+  let val = updated_val |> int.bitwise_shift_right(i)
+  Ok(Bitboard(..bitboard, val: val))
+}
+
+pub fn shift_right(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_right by must be >= 0"))
+  use <- bool.guard(
+    i >= bitboard.width,
+    Error("shift_right by must be < bitboard.width"),
+  )
+
+  let mask =
+    list.range(bitboard.width - 1, bitboard.width - i)
+    |> list.fold(0, fn(m, i) {
+      let assert Ok(r) = col(bitboard, i)
+      int.bitwise_or(m, r.val)
+    })
+  let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
+  let val = updated_val |> int.bitwise_shift_left(i)
   Ok(Bitboard(..bitboard, val: val))
 }
 
