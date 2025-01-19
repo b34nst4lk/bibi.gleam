@@ -304,17 +304,26 @@ pub fn shift_right(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
 }
 
 // Flips
-
 pub fn flip_vertically(bitboard: Bitboard) -> Bitboard {
-  let bitboard =
-    list.range(0, bitboard.height - 1)
-    |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
-      let assert Ok(row_mask) = row(bitboard, i)
-      let assert Ok(row) = and(bitboard, row_mask)
-      let assert Ok(row) = shift_down(row, i)
-      let assert Ok(row) = shift_up(row, bitboard.height - i - 1)
-      let assert Ok(updated_bitboard) = or(b, row)
-      updated_bitboard
-    })
-  bitboard
+  list.range(0, bitboard.height - 1)
+  |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
+    let assert Ok(row_mask) = row(bitboard, i)
+    let assert Ok(row) = and(bitboard, row_mask)
+    let assert Ok(row) = shift_down(row, i)
+    let assert Ok(row) = shift_up(row, bitboard.height - i - 1)
+    let assert Ok(updated_bitboard) = or(b, row)
+    updated_bitboard
+  })
+}
+
+pub fn flip_horizontally(bitboard: Bitboard) -> Bitboard {
+  list.range(0, bitboard.width - 1)
+  |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
+    let assert Ok(col_mask) = col(bitboard, i)
+    let assert Ok(col) = and(bitboard, col_mask)
+    let assert Ok(col) = shift_left(col, i)
+    let assert Ok(col) = shift_right(col, bitboard.width - i - 1)
+    let assert Ok(updated_bitboard) = or(b, col)
+    updated_bitboard
+  })
 }

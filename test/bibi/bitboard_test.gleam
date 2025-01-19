@@ -439,3 +439,22 @@ pub fn successfully_flip_vertically_test() {
     should.equal(updated_bitboard.val, expected)
   })
 }
+
+// Test flip horizontally
+pub fn successfully_flip_horizontally_test() {
+  let test_cases = [
+    #(3, 3, "000000111", "000000111"),
+    #(3, 3, "000111000", "000111000"),
+    #(3, 3, "001001001", "100100100"),
+    #(3, 3, "000111000", "000111000"),
+    #(3, 3, "100000001", "001000100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.3, 2)
+    let updated_bitboard = bitboard.flip_horizontally(b)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
