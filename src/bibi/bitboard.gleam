@@ -1,4 +1,34 @@
-//// The bibi/bitboard module provides the ability to create and manipulate bitboards
+//// The bibi/bitboard module provides the ability to create and manipulate bitboards.
+//// Bitboards have a defined width and height, and an integer that represents the
+//// state of the bitboard when in binary
+////
+//// Suppose you are representing a game of tic-tac-toe that looks like
+////
+////```
+//// X | O | _
+//// - + - + -
+//// O | X | _
+//// - + - + -
+//// O | _ | X
+//// ```
+//// Representing the X's as a bitboard, it would look like
+//// ```
+//// 100
+//// 010
+//// 001
+//// ```
+////
+//// In binary, this would be `001010100`, which translates to 84
+////
+//// Notice that the positions of the 1's when the bitboard is translated into its
+//// binary integer format
+////
+//// The following diagram shows how the individual bits are ordered from right to left
+//// ```
+//// 6 7 8
+//// 3 4 5
+//// 0 1 2
+//// ```
 
 import gleam/bool
 import gleam/int
@@ -11,7 +41,11 @@ pub type Bitboard {
   Bitboard(width: Int, height: Int, val: Int)
 }
 
-// Validators
+pub type BitboardResult =
+  Result(Bitboard, String)
+
+/// Internal validator for ensuring bitboards are of the same dimension before bitboard
+/// operations are performed
 fn validate_equal_dimensions(
   bitboard_1: Bitboard,
   bitboard_2: Bitboard,
@@ -27,23 +61,8 @@ fn validate_equal_dimensions(
   Ok(Nil)
 }
 
-fn validate_coords_list(
-  coords_list: List(Coords),
-  width: Int,
-  height: Int,
-) -> Result(Nil, String) {
-  case coords_list {
-    [first, ..remaining] -> {
-      let result = validate_coords(first, width, height)
-      case result {
-        Ok(_) -> validate_coords_list(remaining, width, height)
-        _ -> result
-      }
-    }
-    _ -> Ok(Nil)
-  }
-}
-
+/// Internal validator for ensuring that coordinates are on the bitboard before
+/// bitboard operations are performed
 fn validate_coords(
   coords: Coords,
   width: Int,
@@ -63,13 +82,29 @@ fn validate_coords(
   Ok(Nil)
 }
 
-// Constructors
-
-pub fn from_base2(
+/// Internal validator for ensuring that coordinates are on the bitboard before
+/// bitboard operations are performed
+fn validate_coords_list(
+  coords_list: List(Coords),
   width: Int,
   height: Int,
-  bits: String,
-) -> Result(Bitboard, String) {
+) -> Result(Nil, String) {
+  case coords_list {
+    [first, ..remaining] -> {
+      let result = validate_coords(first, width, height)
+      case result {
+        Ok(_) -> validate_coords_list(remaining, width, height)
+        _ -> result
+      }
+    }
+    _ -> Ok(Nil)
+  }
+}
+
+/// Create a bitboard of a given width and height, and a binary string
+///
+/// I.e `from_base2(3, 3, "000000111")` --> `Bitboard(width: 3, height: 3, val: 7)`
+pub fn from_base2(width: Int, height: Int, bits: String) -> BitboardResult {
   use <- bool.guard(width < 0, Error("width must be positive"))
   use <- bool.guard(height < 0, Error("height must be positive"))
 
@@ -81,11 +116,10 @@ pub fn from_base2(
   Ok(Bitboard(width, height, val))
 }
 
-pub fn from_coords(
-  width: Int,
-  height: Int,
-  coords: Coords,
-) -> Result(Bitboard, String) {
+/// Create a bitboard of a given width and height, and a Coords
+///
+/// I.e `from_coords(3, 3, Coords(0, 0))` --> `Bitboard(width: 3, height: 3, val: 1)`
+pub fn from_coords(width: Int, height: Int, coords: Coords) -> BitboardResult {
   use <- bool.guard(width < 0, Error("width must be positive"))
   use <- bool.guard(height < 0, Error("height must be positive"))
   let result = validate_coords(coords, width, height)
@@ -98,11 +132,14 @@ pub fn from_coords(
   }
 }
 
+/// Create a bitboard of a given width and height, and a list of Coords
+///
+/// I.e `from_coords(3, 3, [Coords(0, 0), Coords(1, 0)])` --> `Bitboard(width: 3, height: 3, val: 3)`
 pub fn from_list_of_coords(
   width: Int,
   height: Int,
   coords_list: List(Coords),
-) -> Result(Bitboard, String) {
+) -> BitboardResult {
   use <- bool.guard(width < 0, Error("width must be positive"))
   use <- bool.guard(height < 0, Error("height must be positive"))
   let result = validate_coords_list(coords_list, width, height)
@@ -122,7 +159,7 @@ pub fn from_list_of_coords(
   }
 }
 
-// To string
+/// Converts a bitboard into a
 pub fn to_string(bitboard: Bitboard) -> String {
   bitboard.val
   |> int.to_base2
@@ -139,13 +176,17 @@ pub fn to_string(bitboard: Bitboard) -> String {
   |> string.join("\n")
 }
 
-// Single row masks
+/// Full mask
+fn full_mask(b: Bitboard) -> Int {
+  int.bitwise_shift_left(1, b.width * b.height) - 1
+}
 
-fn first_row(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
+// Single rank masks
+fn first_rank(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   case counter >= bitboard.width {
     True -> Bitboard(..bitboard, val: val)
     False -> {
-      first_row(
+      first_rank(
         bitboard,
         counter + 1,
         int.bitwise_or(int.bitwise_shift_left(1, counter), val),
@@ -154,24 +195,24 @@ fn first_row(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   }
 }
 
-pub fn row(bitboard: Bitboard, row_no: Int) -> Result(Bitboard, String) {
-  use <- bool.guard(row_no < 0, Error("row_no must be positive"))
+pub fn rank(bitboard: Bitboard, rank_no: Int) -> BitboardResult {
+  use <- bool.guard(rank_no < 0, Error("rank_no must be positive"))
   use <- bool.guard(
-    row_no >= bitboard.height,
-    Error("row_no must be less than bitboard.height"),
+    rank_no >= bitboard.height,
+    Error("rank_no must be less than bitboard.height"),
   )
 
-  let first_row = first_row(bitboard, 0, 0)
-  let row = int.bitwise_shift_left(first_row.val, row_no * bitboard.width)
-  Ok(Bitboard(..bitboard, val: row))
+  let first_rank = first_rank(bitboard, 0, 0)
+  let rank = int.bitwise_shift_left(first_rank.val, rank_no * bitboard.width)
+  Ok(Bitboard(..bitboard, val: rank))
 }
 
-// Single column masks
-fn first_col(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
+/// Col Masks
+fn first_file(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   case counter >= bitboard.height {
     True -> Bitboard(..bitboard, val: val)
     False -> {
-      first_col(
+      first_file(
         bitboard,
         counter + 1,
         int.bitwise_or(int.bitwise_shift_left(1, counter * bitboard.width), val),
@@ -180,23 +221,94 @@ fn first_col(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   }
 }
 
-pub fn col(bitboard: Bitboard, col_no: Int) -> Result(Bitboard, String) {
-  use <- bool.guard(col_no < 0, Error("col_no must be positive"))
+pub fn file(bitboard: Bitboard, file_no: Int) -> BitboardResult {
+  use <- bool.guard(file_no < 0, Error("file_no must be positive"))
   use <- bool.guard(
-    col_no >= bitboard.width,
-    Error("col_no must be less than bitboard.width"),
+    file_no >= bitboard.width,
+    Error("file_no must be less than bitboard.width"),
   )
 
-  let first_col = first_col(bitboard, 0, 0)
-  let col = int.bitwise_shift_left(first_col.val, col_no)
-  Ok(Bitboard(..bitboard, val: col))
+  let first_file = first_file(bitboard, 0, 0)
+  let file = int.bitwise_shift_left(first_file.val, file_no)
+  Ok(Bitboard(..bitboard, val: file))
 }
 
-// Bitwise operations
-pub fn and(
+fn diagonal_from_south_west(b: Bitboard) -> Bitboard {
+  let length = int.min(b.width, b.height)
+  let val =
+    list.range(0, length - 1)
+    |> list.fold(0, fn(acc, i) {
+      let new_bit = int.bitwise_shift_left(1, b.width * i + i)
+      int.bitwise_or(acc, new_bit)
+    })
+  Bitboard(..b, val: val)
+}
+
+fn antidiagonal_from_south_east(b: Bitboard) -> Bitboard {
+  let length = int.min(b.width, b.height)
+  let seed = int.bitwise_shift_left(1, b.width - 1)
+  let val =
+    list.range(0, length - 1)
+    |> list.fold(0, fn(acc, _) {
+      let acc = int.bitwise_shift_left(acc, b.width - 1)
+      int.bitwise_or(acc, seed)
+    })
+  let b = Bitboard(..b, val: val)
+  b
+}
+
+// Single diagonal mask
+pub fn diagonal(bitboard: Bitboard, diagonal_no: Int) -> BitboardResult {
+  let max_diagonal_no = bitboard.width + bitboard.height - 2
+
+  use <- bool.guard(diagonal_no < 0, Error("diagonal_no must be positive"))
+  use <- bool.guard(
+    diagonal_no > max_diagonal_no,
+    Error("diagonal_no must be less than bitboard.width + bitboard.height - 1"),
+  )
+
+  let main_diagonal = diagonal_from_south_west(bitboard)
+  case diagonal_no < bitboard.width, bitboard.width < bitboard.height {
+    True, True -> shift_south(main_diagonal, bitboard.width - diagonal_no - 1)
+    True, False -> shift_east(main_diagonal, bitboard.width - diagonal_no - 1)
+    False, True -> shift_north(main_diagonal, diagonal_no - bitboard.width + 1)
+    False, False -> shift_west(main_diagonal, diagonal_no - bitboard.width + 1)
+  }
+}
+
+// Single antidiagonal mask
+pub fn antidiagonal(bitboard: Bitboard, antidiagonal_no: Int) -> BitboardResult {
+  let max_antidiagonal_no = bitboard.width + bitboard.height - 2
+
+  use <- bool.guard(
+    antidiagonal_no < 0,
+    Error("antidiagonal_no must be positive"),
+  )
+  use <- bool.guard(
+    antidiagonal_no > max_antidiagonal_no,
+    Error(
+      "antidiagonal_no must be less than bitboard.width + bitboard.height - 1",
+    ),
+  )
+
+  let main_diagonal = antidiagonal_from_south_east(bitboard)
+  case antidiagonal_no < bitboard.width, bitboard.width < bitboard.height {
+    True, True ->
+      shift_south(main_diagonal, bitboard.width - antidiagonal_no - 1)
+    True, False ->
+      shift_west(main_diagonal, bitboard.width - antidiagonal_no - 1)
+    False, True ->
+      shift_north(main_diagonal, antidiagonal_no - bitboard.width + 1)
+    False, False ->
+      shift_east(main_diagonal, antidiagonal_no - bitboard.width + 1)
+  }
+}
+
+/// Bitwise operations
+pub fn bitboard_and(
   bitboard_1: Bitboard,
   bitboard_2: Bitboard,
-) -> Result(Bitboard, String) {
+) -> BitboardResult {
   case validate_equal_dimensions(bitboard_1, bitboard_2) {
     Error(err) -> Error(err)
     Ok(_) ->
@@ -209,10 +321,7 @@ pub fn and(
   }
 }
 
-pub fn or(
-  bitboard_1: Bitboard,
-  bitboard_2: Bitboard,
-) -> Result(Bitboard, String) {
+pub fn bitboard_or(bitboard_1: Bitboard, bitboard_2: Bitboard) -> BitboardResult {
   case validate_equal_dimensions(bitboard_1, bitboard_2) {
     Error(err) -> Error(err)
     Ok(_) ->
@@ -225,7 +334,7 @@ pub fn or(
   }
 }
 
-pub fn not(bitboard: Bitboard) -> Bitboard {
+pub fn bitboard_not(bitboard: Bitboard) -> Bitboard {
   let full_board =
     int.bitwise_shift_left(1, bitboard.width * bitboard.height) - 1
 
@@ -234,49 +343,37 @@ pub fn not(bitboard: Bitboard) -> Bitboard {
 }
 
 // Shifts
-pub fn shift_up(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
-  use <- bool.guard(i < 0, Error("shift_up by must be >= 0"))
-  use <- bool.guard(
-    i >= bitboard.height,
-    Error("shift_up by must be < bitboard.height"),
-  )
-
-  let mask =
-    list.range(bitboard.height - 1, bitboard.height - i)
-    |> list.fold(0, fn(m, i) {
-      let assert Ok(r) = row(bitboard, i)
-      int.bitwise_or(m, r.val)
-    })
-  let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
-  let val = updated_val |> int.bitwise_shift_left(i * bitboard.width)
+  use <- bool.guard(i < 0, Error("shift_north by must be >= 0"))
+  let val =
+    bitboard.val
+    |> int.bitwise_shift_left(i * bitboard.width)
+    |> int.bitwise_and(full_mask(bitboard))
   Ok(Bitboard(..bitboard, val: val))
 }
 
-pub fn shift_down(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+pub fn shift_south(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
-  use <- bool.guard(i < 0, Error("shift_down by must be >= 0"))
-  use <- bool.guard(
-    i >= bitboard.height,
-    Error("shift_down by must be < bitboard.height"),
-  )
-
-  let val = bitboard.val |> int.bitwise_shift_right(i * bitboard.width)
+  use <- bool.guard(i < 0, Error("shift_south by must be >= 0"))
+  let val =
+    bitboard.val
+    |> int.bitwise_shift_right(i * bitboard.width)
   Ok(Bitboard(..bitboard, val: val))
 }
 
-pub fn shift_left(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
-  use <- bool.guard(i < 0, Error("shift_left by must be >= 0"))
+  use <- bool.guard(i < 0, Error("shift_west by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.width,
-    Error("shift_left by must be < bitboard.width"),
+    Error("shift_west by must be < bitboard.width"),
   )
 
   let mask =
     list.range(0, i - 1)
     |> list.fold(0, fn(m, i) {
-      let assert Ok(r) = col(bitboard, i)
+      let assert Ok(r) = file(bitboard, i)
       int.bitwise_or(m, r.val)
     })
   let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
@@ -284,18 +381,18 @@ pub fn shift_left(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
   Ok(Bitboard(..bitboard, val: val))
 }
 
-pub fn shift_right(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
+pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
-  use <- bool.guard(i < 0, Error("shift_right by must be >= 0"))
+  use <- bool.guard(i < 0, Error("shift_east by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.width,
-    Error("shift_right by must be < bitboard.width"),
+    Error("shift_east by must be < bitboard.width"),
   )
 
   let mask =
     list.range(bitboard.width - 1, bitboard.width - i)
     |> list.fold(0, fn(m, i) {
-      let assert Ok(r) = col(bitboard, i)
+      let assert Ok(r) = file(bitboard, i)
       int.bitwise_or(m, r.val)
     })
   let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
@@ -307,11 +404,11 @@ pub fn shift_right(bitboard: Bitboard, by i: Int) -> Result(Bitboard, String) {
 pub fn flip_vertically(bitboard: Bitboard) -> Bitboard {
   list.range(0, bitboard.height - 1)
   |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
-    let assert Ok(row_mask) = row(bitboard, i)
-    let assert Ok(row) = and(bitboard, row_mask)
-    let assert Ok(row) = shift_down(row, i)
-    let assert Ok(row) = shift_up(row, bitboard.height - i - 1)
-    let assert Ok(updated_bitboard) = or(b, row)
+    let assert Ok(rank_mask) = rank(bitboard, i)
+    let assert Ok(rank) = bitboard_and(bitboard, rank_mask)
+    let assert Ok(rank) = shift_south(rank, i)
+    let assert Ok(rank) = shift_north(rank, bitboard.height - i - 1)
+    let assert Ok(updated_bitboard) = bitboard_or(b, rank)
     updated_bitboard
   })
 }
@@ -319,11 +416,11 @@ pub fn flip_vertically(bitboard: Bitboard) -> Bitboard {
 pub fn flip_horizontally(bitboard: Bitboard) -> Bitboard {
   list.range(0, bitboard.width - 1)
   |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
-    let assert Ok(col_mask) = col(bitboard, i)
-    let assert Ok(col) = and(bitboard, col_mask)
-    let assert Ok(col) = shift_left(col, i)
-    let assert Ok(col) = shift_right(col, bitboard.width - i - 1)
-    let assert Ok(updated_bitboard) = or(b, col)
+    let assert Ok(file_mask) = file(bitboard, i)
+    let assert Ok(file) = bitboard_and(bitboard, file_mask)
+    let assert Ok(file) = shift_west(file, i)
+    let assert Ok(file) = shift_east(file, bitboard.width - i - 1)
+    let assert Ok(updated_bitboard) = bitboard_or(b, file)
     updated_bitboard
   })
 }

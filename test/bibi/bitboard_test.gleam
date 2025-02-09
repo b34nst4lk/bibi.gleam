@@ -99,8 +99,8 @@ pub fn successfully_bitboard_to_string_test() {
   })
 }
 
-// Test deriving row from bitboard
-pub fn successfully_create_row_from_bitboard_test() {
+// Test deriving rank from bitboard
+pub fn successfully_create_rank_from_bitboard_test() {
   let test_cases = [
     #(3, 3, Coords(1, 1), 1, "000111000"),
     #(4, 3, Coords(0, 0), 0, "000000001111"),
@@ -112,28 +112,28 @@ pub fn successfully_create_row_from_bitboard_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
-    let assert Ok(row) = bitboard.row(b, test_case.3)
+    let assert Ok(rank) = bitboard.rank(b, test_case.3)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    should.equal(row.val, expected)
+    should.equal(rank.val, expected)
   })
 }
 
-pub fn fail_to_create_row_from_bitboard_test() {
+pub fn fail_to_create_rank_from_bitboard_test() {
   let test_cases = [
-    #(3, 3, Coords(1, 1), -11, "row_no must be positive"),
-    #(4, 3, Coords(0, 0), 4, "row_no must be less than bitboard.height"),
+    #(3, 3, Coords(1, 1), -11, "rank_no must be positive"),
+    #(4, 3, Coords(0, 0), 4, "rank_no must be less than bitboard.height"),
   ]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.row(b, test_case.3)
+    let result = bitboard.rank(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
 
-// Test deriving column from bitboard
-pub fn successfully_create_col_from_bitboard_test() {
+// Test deriving fileumn from bitboard
+pub fn successfully_create_file_from_bitboard_test() {
   let test_cases = [
     #(3, 3, Coords(1, 1), 1, "010010010"),
     #(4, 3, Coords(0, 0), 0, "000100010001"),
@@ -145,28 +145,64 @@ pub fn successfully_create_col_from_bitboard_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
-    let assert Ok(col) = bitboard.col(b, test_case.3)
+    let assert Ok(file) = bitboard.file(b, test_case.3)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    should.equal(col.val, expected)
+    should.equal(file.val, expected)
   })
 }
 
-pub fn fail_to_create_col_from_bitboard_test() {
+pub fn fail_to_create_file_from_bitboard_test() {
   let test_cases = [
-    #(3, 3, Coords(1, 1), -11, "col_no must be positive"),
-    #(4, 3, Coords(0, 0), 4, "col_no must be less than bitboard.width"),
+    #(3, 3, Coords(1, 1), -11, "file_no must be positive"),
+    #(4, 3, Coords(0, 0), 4, "file_no must be less than bitboard.width"),
   ]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.col(b, test_case.3)
+    let result = bitboard.file(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
 
-// Test `and` operator on bitboard
-pub fn successfuly_apply_and_on_bitboards_test() {
+// Test successfully create diagonal from bitboard
+pub fn sucessfully_create_diagonal_from_bitboard_test() {
+  let test_cases = [
+    // #(3, 3, 4, "001000000"),
+    // #(3, 3, 2, "100010001"),
+    // #(3, 3, 3, "010001000"),
+    #(4, 3, 1, "000010000100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let b = Bitboard(test_case.0, test_case.1, 0)
+    let assert Ok(result) = bitboard.diagonal(b, test_case.2)
+    let assert Ok(expected) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.3)
+    should.equal(result, expected)
+  })
+}
+
+// Test successfully create antidiagonal from bitboard
+pub fn sucessfully_create_antidiagonal_from_bitboard_test() {
+  let test_cases = [
+    #(3, 3, 0, "000000001"),
+    #(3, 3, 2, "001010100"),
+    #(3, 3, 3, "010100000"),
+    #(4, 3, 1, "10010"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let b = Bitboard(test_case.0, test_case.1, 0)
+    let assert Ok(result) = bitboard.antidiagonal(b, test_case.2)
+    let assert Ok(expected) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.3)
+    should.equal(result, expected)
+  })
+}
+
+// Test `bitboard_and` operator on bitboard
+pub fn successfully_apply_and_on_bitboards_test() {
   let test_cases = [
     #(
       bitboard.from_list_of_coords(1, 3, [Coords(0, 1), Coords(0, 2)]),
@@ -192,7 +228,7 @@ pub fn successfuly_apply_and_on_bitboards_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b1) = test_case.0
     let assert Ok(b2) = test_case.1
-    let assert Ok(result) = bitboard.and(b1, b2)
+    let assert Ok(result) = bitboard.bitboard_and(b1, b2)
     let assert Ok(expected) = int.base_parse(test_case.2, 2)
     should.equal(result.val, expected)
   })
@@ -215,7 +251,7 @@ pub fn fail_to_apply_and_on_bitboards_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b1) = test_case.0
     let assert Ok(b2) = test_case.1
-    let assert Error(result) = bitboard.and(b1, b2)
+    let assert Error(result) = bitboard.bitboard_and(b1, b2)
     should.equal(result, test_case.2)
   })
 }
@@ -247,7 +283,7 @@ pub fn successfuly_apply_or_on_bitboards_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b1) = test_case.0
     let assert Ok(b2) = test_case.1
-    let assert Ok(result) = bitboard.or(b1, b2)
+    let assert Ok(result) = bitboard.bitboard_or(b1, b2)
     let assert Ok(expected) = int.base_parse(test_case.2, 2)
     should.equal(result.val, expected)
   })
@@ -270,12 +306,12 @@ pub fn fail_to_apply_or_on_bitboards_test() {
   |> list.map(fn(test_case) {
     let assert Ok(b1) = test_case.0
     let assert Ok(b2) = test_case.1
-    let assert Error(result) = bitboard.or(b1, b2)
+    let assert Error(result) = bitboard.bitboard_or(b1, b2)
     should.equal(result, test_case.2)
   })
 }
 
-// Test not operator
+// Test bitboard_not operator
 pub fn successfully_apply_not_on_bitboard_test() {
   let test_cases = [
     #(5, 5, Coords(2, 2), "1111111111110111111111111"),
@@ -286,12 +322,15 @@ pub fn successfully_apply_not_on_bitboard_test() {
     let assert Ok(bitboard) =
       bitboard.from_coords(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.3, 2)
-    should.equal(bitboard.not(bitboard), Bitboard(..bitboard, val: expected))
+    should.equal(
+      bitboard.bitboard_not(bitboard),
+      Bitboard(..bitboard, val: expected),
+    )
   })
 }
 
 // Test shift down
-pub fn successfully_shift_down_bitboard_test() {
+pub fn successfully_shift_south_bitboard_test() {
   let test_cases = [
     #(3, 3, "111000000", 2, "000000111"),
     #(3, 3, "111000000", 1, "000111000"),
@@ -304,28 +343,24 @@ pub fn successfully_shift_down_bitboard_test() {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    let assert Ok(updated_bitboard) = bitboard.shift_down(b, test_case.3)
+    let assert Ok(updated_bitboard) = bitboard.shift_south(b, test_case.3)
     should.equal(updated_bitboard.val, expected)
   })
 }
 
-pub fn fail_to_shift_down_bitboard_test() {
-  let test_cases = [
-    #(3, 3, "000000111", 10, "shift_down by must be < bitboard.height"),
-    #(3, 3, "000000111", 3, "shift_down by must be < bitboard.height"),
-    #(3, 3, "000000111", -1, "shift_down by must be >= 0"),
-  ]
+pub fn fail_to_shift_south_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_south by must be >= 0")]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.shift_down(b, test_case.3)
+    let result = bitboard.shift_south(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
 
 // Test shift up
-pub fn successfully_shift_up_bitboard_test() {
+pub fn successfully_shift_north_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "111000000"),
     #(3, 3, "000000111", 1, "000111000"),
@@ -337,28 +372,24 @@ pub fn successfully_shift_up_bitboard_test() {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    let assert Ok(updated_bitboard) = bitboard.shift_up(b, test_case.3)
+    let assert Ok(updated_bitboard) = bitboard.shift_north(b, test_case.3)
     should.equal(updated_bitboard.val, expected)
   })
 }
 
-pub fn fail_to_shift_up_bitboard_test() {
-  let test_cases = [
-    #(3, 3, "000000111", 10, "shift_up by must be < bitboard.height"),
-    #(3, 3, "000000111", 3, "shift_up by must be < bitboard.height"),
-    #(3, 3, "000000111", -1, "shift_up by must be >= 0"),
-  ]
+pub fn fail_to_shift_north_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_north by must be >= 0")]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.shift_up(b, test_case.3)
+    let result = bitboard.shift_north(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
 
 // Test shift left
-pub fn successfully_shift_left_bitboard_test() {
+pub fn successfully_shift_west_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "000000001"),
     #(3, 3, "000000111", 1, "000000011"),
@@ -370,28 +401,28 @@ pub fn successfully_shift_left_bitboard_test() {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    let assert Ok(updated_bitboard) = bitboard.shift_left(b, test_case.3)
+    let assert Ok(updated_bitboard) = bitboard.shift_west(b, test_case.3)
     should.equal(updated_bitboard.val, expected)
   })
 }
 
-pub fn fail_to_shift_left_bitboard_test() {
+pub fn fail_to_shift_west_bitboard_test() {
   let test_cases = [
-    #(3, 3, "000000111", 10, "shift_left by must be < bitboard.width"),
-    #(3, 3, "000000111", 3, "shift_left by must be < bitboard.width"),
-    #(3, 3, "000000111", -1, "shift_left by must be >= 0"),
+    #(3, 3, "000000111", 10, "shift_west by must be < bitboard.width"),
+    #(3, 3, "000000111", 3, "shift_west by must be < bitboard.width"),
+    #(3, 3, "000000111", -1, "shift_west by must be >= 0"),
   ]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.shift_left(b, test_case.3)
+    let result = bitboard.shift_west(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
 
 //Test shift right
-pub fn successfully_shift_right_bitboard_test() {
+pub fn successfully_shift_east_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "000000100"),
     #(3, 3, "000000111", 1, "000000110"),
@@ -403,22 +434,22 @@ pub fn successfully_shift_right_bitboard_test() {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let assert Ok(expected) = int.base_parse(test_case.4, 2)
-    let assert Ok(updated_bitboard) = bitboard.shift_right(b, test_case.3)
+    let assert Ok(updated_bitboard) = bitboard.shift_east(b, test_case.3)
     should.equal(updated_bitboard.val, expected)
   })
 }
 
-pub fn fail_to_shift_right_bitboard_test() {
+pub fn fail_to_shift_east_bitboard_test() {
   let test_cases = [
-    #(3, 3, "000000111", 10, "shift_right by must be < bitboard.width"),
-    #(3, 3, "000000111", 3, "shift_right by must be < bitboard.width"),
-    #(3, 3, "000000111", -1, "shift_right by must be >= 0"),
+    #(3, 3, "000000111", 10, "shift_east by must be < bitboard.width"),
+    #(3, 3, "000000111", 3, "shift_east by must be < bitboard.width"),
+    #(3, 3, "000000111", -1, "shift_east by must be >= 0"),
   ]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
-    let result = bitboard.shift_right(b, test_case.3)
+    let result = bitboard.shift_east(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
