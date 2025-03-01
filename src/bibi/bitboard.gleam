@@ -41,7 +41,7 @@ pub type Bitboard {
   Bitboard(width: Int, height: Int, val: Int)
 }
 
-pub type BitboardResult =
+type BitboardResult =
   Result(Bitboard, String)
 
 /// Internal validator for ensuring bitboards are of the same dimension before bitboard
@@ -99,6 +99,13 @@ fn validate_coords_list(
     }
     _ -> Ok(Nil)
   }
+}
+
+/// Create an empty bitboard of a given width and height
+pub fn new(width: Int, height: Int) -> BitboardResult {
+  use <- bool.guard(width < 0, Error("width must be positive"))
+  use <- bool.guard(height < 0, Error("height must be positive"))
+  Ok(Bitboard(width, height, 0))
 }
 
 /// Create a bitboard of a given width and height, and a binary string
@@ -159,7 +166,43 @@ pub fn from_list_of_coords(
   }
 }
 
-/// Converts a bitboard into a
+/// Create a bitboard of a given with and height, and the nth square
+///
+/// I.e. `from_square(3,3, 1)` --> `Bitboard(width: 3, height: 3, val: 2)`
+///
+/// Squares are indexed from bottom left to top right. A 3 by 3 bitboard will be indexed as follows
+/// ```
+/// 6 7 8
+/// 3 4 5
+/// 0 1 2
+/// ```
+pub fn from_square(width, height, square) -> BitboardResult {
+  use <- bool.guard(width < 0, Error("width must be positive"))
+  use <- bool.guard(height < 0, Error("height must be positive"))
+  use <- bool.guard(
+    square > width * height,
+    Error(
+      "square ("
+      <> int.to_string(square)
+      <> ") must be less than width ("
+      <> int.to_string(width)
+      <> ") *"
+      <> "height ("
+      <> int.to_string(height)
+      <> ")",
+    ),
+  )
+  Ok(Bitboard(width, height, int.bitwise_shift_left(1, square)))
+}
+
+/// Converts a bitboard into a width * height, breakpoint separated string of 1s and 0s
+///
+/// I.e. `to_string(Bitboard(width: 3, height: 3, val: 2))` -->
+/// ```
+/// 000
+/// 000
+/// 010
+/// ````
 pub fn to_string(bitboard: Bitboard) -> String {
   bitboard.val
   |> int.to_base2
@@ -176,9 +219,46 @@ pub fn to_string(bitboard: Bitboard) -> String {
   |> string.join("\n")
 }
 
+/// Converts a bitboard into a list of integers representing where a square is occupied
+///
+/// I.e `to_squares(Bitboard(width: 3, height: 3, val: 3))` --> `[0, 1]`
+pub fn to_squares(b: Bitboard) -> List(Int) {
+  let result =
+    list.range(0, b.width * b.height - 1)
+    |> list.fold_until(#(b.val, []), fn(acc, i) {
+      let #(board, l) = acc
+      let l = case int.bitwise_and(1, board) > 0 {
+        True -> [i, ..l]
+        False -> l
+      }
+      let board = int.bitwise_shift_right(board, 1)
+      case board > 0 {
+        True -> list.Continue(#(board, l))
+        False -> list.Stop(#(board, l))
+      }
+    })
+
+  result.1
+}
+
+/// Convers a bitboard into a list of booleans representing where a square is occupied
+///
+/// I.e `to_bools(Bitboard(width: 3, height: 3, val: 3))` --> `[True, True, False,... ]` (False repeats 7 times in this example)
+pub fn to_bools(b: Bitboard) -> List(Bool) {
+  list.range(0, b.width * b.height - 1)
+  |> list.fold([], fn(acc, i) {
+    let has_bit = int.bitwise_and(int.bitwise_shift_left(1, i), b.val) > 0
+    list.append(acc, [has_bit])
+  })
+}
+
 /// Full mask
-fn full_mask(b: Bitboard) -> Int {
+fn int_full_mask(b: Bitboard) -> Int {
   int.bitwise_shift_left(1, b.width * b.height) - 1
+}
+
+pub fn full_mask(b: Bitboard) -> Bitboard {
+  Bitboard(..b, val: int_full_mask(b))
 }
 
 // Single rank masks
@@ -349,7 +429,7 @@ pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
   let val =
     bitboard.val
     |> int.bitwise_shift_left(i * bitboard.width)
-    |> int.bitwise_and(full_mask(bitboard))
+    |> int.bitwise_and(int_full_mask(bitboard))
   Ok(Bitboard(..bitboard, val: val))
 }
 

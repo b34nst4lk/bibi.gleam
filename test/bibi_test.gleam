@@ -1,5 +1,5 @@
 import gleeunit
 
 pub fn main() {
-  gleeunit.main()
+  let _ = gleeunit.main()
 }
