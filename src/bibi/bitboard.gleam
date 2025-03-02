@@ -29,6 +29,20 @@
 //// 3 4 5
 //// 0 1 2
 //// ```
+////
+//// To disambiguate between the bitwise shift operations in the `int` modules and bitboard shifts
+//// we use cardinal directions when describing and manipulating bitboards.
+////
+//// ```
+////      north
+////
+////       000
+//// west  000  east
+////       000
+////
+////      south
+//// ```
+////
 
 import gleam/bool
 import gleam/int
@@ -110,7 +124,8 @@ pub fn new(width: Int, height: Int) -> BitboardResult {
 
 /// Create a bitboard of a given width and height, and a binary string
 ///
-/// I.e `from_base2(3, 3, "000000111")` --> `Bitboard(width: 3, height: 3, val: 7)`
+/// i.e.
+/// `from_base2(3, 3, "000000111")` --> `Bitboard(width: 3, height: 3, val: 7)`
 pub fn from_base2(width: Int, height: Int, bits: String) -> BitboardResult {
   use <- bool.guard(width < 0, Error("width must be positive"))
   use <- bool.guard(height < 0, Error("height must be positive"))
@@ -125,7 +140,8 @@ pub fn from_base2(width: Int, height: Int, bits: String) -> BitboardResult {
 
 /// Create a bitboard of a given width and height, and a Coords
 ///
-/// I.e `from_coords(3, 3, Coords(0, 0))` --> `Bitboard(width: 3, height: 3, val: 1)`
+/// i.e.
+/// `from_coords(3, 3, Coords(0, 0))` --> `Bitboard(width: 3, height: 3, val: 1)`
 pub fn from_coords(width: Int, height: Int, coords: Coords) -> BitboardResult {
   use <- bool.guard(width < 0, Error("width must be positive"))
   use <- bool.guard(height < 0, Error("height must be positive"))
@@ -141,7 +157,8 @@ pub fn from_coords(width: Int, height: Int, coords: Coords) -> BitboardResult {
 
 /// Create a bitboard of a given width and height, and a list of Coords
 ///
-/// I.e `from_coords(3, 3, [Coords(0, 0), Coords(1, 0)])` --> `Bitboard(width: 3, height: 3, val: 3)`
+/// i.e.
+/// `from_coords(3, 3, [Coords(0, 0), Coords(1, 0)])` --> `Bitboard(width: 3, height: 3, val: 3)`
 pub fn from_list_of_coords(
   width: Int,
   height: Int,
@@ -168,7 +185,7 @@ pub fn from_list_of_coords(
 
 /// Create a bitboard of a given with and height, and the nth square
 ///
-/// I.e. `from_square(3,3, 1)` --> `Bitboard(width: 3, height: 3, val: 2)`
+/// i.e. `from_square(3, 3, 1)` --> `Bitboard(width: 3, height: 3, val: 2)`
 ///
 /// Squares are indexed from bottom left to top right. A 3 by 3 bitboard will be indexed as follows
 /// ```
@@ -197,7 +214,7 @@ pub fn from_square(width, height, square) -> BitboardResult {
 
 /// Converts a bitboard into a width * height, breakpoint separated string of 1s and 0s
 ///
-/// I.e. `to_string(Bitboard(width: 3, height: 3, val: 2))` -->
+/// i.e. `to_string(Bitboard(width: 3, height: 3, val: 2))` -->
 /// ```
 /// 000
 /// 000
@@ -221,7 +238,7 @@ pub fn to_string(bitboard: Bitboard) -> String {
 
 /// Converts a bitboard into a list of integers representing where a square is occupied
 ///
-/// I.e `to_squares(Bitboard(width: 3, height: 3, val: 3))` --> `[0, 1]`
+/// i.e `to_squares(Bitboard(width: 3, height: 3, val: 3))` --> `[0, 1]`
 pub fn to_squares(b: Bitboard) -> List(Int) {
   let result =
     list.range(0, b.width * b.height - 1)
@@ -243,7 +260,8 @@ pub fn to_squares(b: Bitboard) -> List(Int) {
 
 /// Convers a bitboard into a list of booleans representing where a square is occupied
 ///
-/// I.e `to_bools(Bitboard(width: 3, height: 3, val: 3))` --> `[True, True, False,... ]` (False repeats 7 times in this example)
+/// i.e
+/// `to_bools(Bitboard(width: 3, height: 3, val: 3))` --> `[True, True, False,... ]` (False repeats 7 times in this example)
 pub fn to_bools(b: Bitboard) -> List(Bool) {
   list.range(0, b.width * b.height - 1)
   |> list.fold([], fn(acc, i) {
@@ -252,11 +270,18 @@ pub fn to_bools(b: Bitboard) -> List(Bool) {
   })
 }
 
-/// Full mask
 fn int_full_mask(b: Bitboard) -> Int {
   int.bitwise_shift_left(1, b.width * b.height) - 1
 }
 
+/// This returns a bitboard that is fully occupied
+///
+/// i.e.
+/// ```
+///                                  111
+/// full_mask(Bitboard(3, 3, 1)) --> 111
+///                                  111
+/// ```
 pub fn full_mask(b: Bitboard) -> Bitboard {
   Bitboard(..b, val: int_full_mask(b))
 }
@@ -275,6 +300,15 @@ fn first_rank(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   }
 }
 
+/// Returns a bitboard with the nth rank occupied of the provided bitboard.
+/// Ranks are indexed from 0 to height - 1, and start from the north side of the board.
+///
+/// i.e.
+/// ```
+///                             000
+/// rank(Bitboard(3, 3, 1)) --> 111
+///                             000
+/// ````
 pub fn rank(bitboard: Bitboard, rank_no: Int) -> BitboardResult {
   use <- bool.guard(rank_no < 0, Error("rank_no must be positive"))
   use <- bool.guard(
@@ -287,7 +321,7 @@ pub fn rank(bitboard: Bitboard, rank_no: Int) -> BitboardResult {
   Ok(Bitboard(..bitboard, val: rank))
 }
 
-/// Col Masks
+/// File Masks
 fn first_file(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   case counter >= bitboard.height {
     True -> Bitboard(..bitboard, val: val)
@@ -301,6 +335,15 @@ fn first_file(bitboard: Bitboard, counter: Int, val: Int) -> Bitboard {
   }
 }
 
+/// Returns a bitboard with the nth file occupied of the provided bitboard
+/// Files are indexed from 0 to width - 1, and start from the west side of the board
+///
+/// i.e.
+/// ```
+///                              010
+/// file(Bitboard(3, 3, 1)) --> 010
+///                              010
+/// ````
 pub fn file(bitboard: Bitboard, file_no: Int) -> BitboardResult {
   use <- bool.guard(file_no < 0, Error("file_no must be positive"))
   use <- bool.guard(
@@ -337,7 +380,33 @@ fn antidiagonal_from_south_east(b: Bitboard) -> Bitboard {
   b
 }
 
-// Single diagonal mask
+/// Diagonals are made up of squares that touch at thr corners, and stretch from the
+/// south eastern corner and towards the north western corner.
+///
+/// In rectangular bitboards, the diagonals will appear as follows
+///
+/// ```
+/// 0010
+/// 0100
+/// 1000
+/// ```
+///
+/// Diagonals are indexed in the `width + rank - file`. In a bitboard of width 3 and
+/// height 4, the diagonals will be indexed as
+/// ```
+/// 5 . .
+/// 4 . .
+/// 3 . .
+/// 2 1 0
+/// ```
+///
+/// A diagonal of index 3 in the above bitboard will look like this
+/// ```
+/// 001
+/// 010
+/// 100
+/// 000
+/// ```
 pub fn diagonal(bitboard: Bitboard, diagonal_no: Int) -> BitboardResult {
   let max_diagonal_no = bitboard.width + bitboard.height - 2
 
@@ -356,7 +425,33 @@ pub fn diagonal(bitboard: Bitboard, diagonal_no: Int) -> BitboardResult {
   }
 }
 
-// Single antidiagonal mask
+/// Antidiagonals are made up of squares that touch at thr corners, and stretch from the
+/// south eastern corner and towards the north western corner.
+///
+/// In rectangular bitboards, the anti-diagonals will appear as follows
+///
+/// ```
+/// 1000
+/// 0100
+/// 0010
+/// ```
+///
+/// Antidiagonals are indexed in the `rank + file`. In a bitboard of width 3 and
+/// height 4, the anti-diagonals will be indexed as
+/// ```
+/// . . 5
+/// . . 4
+/// . . 3
+/// 0 1 2
+/// ```
+///
+/// A anti-diagonal of index 3 in the above bitboard will look like this
+/// ```
+/// 100
+/// 010
+/// 001
+/// 000
+/// ```
 pub fn antidiagonal(bitboard: Bitboard, antidiagonal_no: Int) -> BitboardResult {
   let max_antidiagonal_no = bitboard.width + bitboard.height - 2
 
@@ -384,7 +479,14 @@ pub fn antidiagonal(bitboard: Bitboard, antidiagonal_no: Int) -> BitboardResult 
   }
 }
 
-/// Bitwise operations
+/// Perfroms the `and` operation on two bitboards and returns a new bitboard.
+/// If a square is occupied on both bitboards, it will be occupied in the
+/// resulting bitboard. Both bitboards must have the same width and height.
+/// ```
+/// 010     000     000
+/// 010 and 111 --> 010
+/// 010     000     000
+/// ```
 pub fn bitboard_and(
   bitboard_1: Bitboard,
   bitboard_2: Bitboard,
@@ -401,6 +503,14 @@ pub fn bitboard_and(
   }
 }
 
+/// Perfroms the `or` operation on two bitboards and returns a new bitboard.
+/// If a square is occupied on both bitboards, it will be occupied in the
+/// resulting bitboard. Both bitboards must have the same width and height.
+/// ```
+/// 010     000     010
+/// 010 and 111 --> 111
+/// 010     000     010
+/// ```
 pub fn bitboard_or(bitboard_1: Bitboard, bitboard_2: Bitboard) -> BitboardResult {
   case validate_equal_dimensions(bitboard_1, bitboard_2) {
     Error(err) -> Error(err)
@@ -414,6 +524,15 @@ pub fn bitboard_or(bitboard_1: Bitboard, bitboard_2: Bitboard) -> BitboardResult
   }
 }
 
+/// Performs the `not` operation on a bitboard. All occupied squares will become unoccupied,
+/// and vice versa.
+///
+/// i.e.
+/// ```
+/// 010    101
+/// 101 -> 010
+/// 010    101
+/// ```
 pub fn bitboard_not(bitboard: Bitboard) -> Bitboard {
   let full_board =
     int.bitwise_shift_left(1, bitboard.width * bitboard.height) - 1
@@ -422,7 +541,14 @@ pub fn bitboard_not(bitboard: Bitboard) -> Bitboard {
   Bitboard(..bitboard, val: val)
 }
 
-// Shifts
+/// Shifts the entire board towards the north by `i`
+///
+/// i.e. shift_north by 1
+/// ````
+/// 100    100
+/// 100 -> 100
+/// 100    000
+/// ````
 pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_north by must be >= 0"))
@@ -433,6 +559,14 @@ pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
   Ok(Bitboard(..bitboard, val: val))
 }
 
+/// Shifts the entire board towards the south by `i`
+///
+/// i.e. shift_south by 1
+/// ````
+/// 100    000
+/// 100 -> 100
+/// 100    100
+/// ````
 pub fn shift_south(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_south by must be >= 0"))
@@ -442,6 +576,15 @@ pub fn shift_south(bitboard: Bitboard, by i: Int) -> BitboardResult {
   Ok(Bitboard(..bitboard, val: val))
 }
 
+/// Shifts the entire board towards the west by `i`. Note that westwards
+/// shifts will result in westmost occupied squares to be removed completely
+///
+/// i.e. shift_west by 1
+/// ````
+/// 111    110
+/// 000 -> 000
+/// 000    000
+/// ````
 pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_west by must be >= 0"))
@@ -461,6 +604,15 @@ pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
   Ok(Bitboard(..bitboard, val: val))
 }
 
+/// Shifts the entire board towards the east by `i`. Note that eastwards
+/// shifts will result in eastmost occupied squares to be removed completely
+///
+/// i.e. shift_east by 1
+/// ````
+/// 111    011
+/// 000 -> 000
+/// 000    000
+/// ````
 pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_east by must be >= 0"))
@@ -480,7 +632,14 @@ pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
   Ok(Bitboard(..bitboard, val: val))
 }
 
-// Flips
+/// Flips a bitboard vertically
+///
+/// i.e
+/// ````
+/// 111    000
+/// 000 -> 000
+/// 000    111
+/// ````
 pub fn flip_vertically(bitboard: Bitboard) -> Bitboard {
   list.range(0, bitboard.height - 1)
   |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
@@ -493,6 +652,14 @@ pub fn flip_vertically(bitboard: Bitboard) -> Bitboard {
   })
 }
 
+/// Flips a bitboard horizontally
+///
+/// i.e
+/// ````
+/// 100    001
+/// 100 -> 001
+/// 100    001
+/// ````
 pub fn flip_horizontally(bitboard: Bitboard) -> Bitboard {
   list.range(0, bitboard.width - 1)
   |> list.fold(Bitboard(..bitboard, val: 0), fn(b, i) {
