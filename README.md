@@ -4,21 +4,11 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/bibi/)
 
 ```sh
-gleam add bibi@1
-```
-```gleam
-import bibi
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
+gleam add bibi
 ```
 
-Further documentation can be found at <https://hexdocs.pm/bibi>.
+# Examples
+Check out this [example](./examples/tic_tac_toe) of how you might use bitboards for implmenting tic tac toe.
 
-## Development
+Further documentation can be found at <https://hexdocs.pm/packages/bibi>.
 
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-```
