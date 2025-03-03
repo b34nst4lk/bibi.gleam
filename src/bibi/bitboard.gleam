@@ -524,6 +524,30 @@ pub fn bitboard_or(bitboard_1: Bitboard, bitboard_2: Bitboard) -> BitboardResult
   }
 }
 
+/// Perfroms the `xor` operation on two bitboards and returns a new bitboard.
+/// If a square is occupied only on on of the two  bitboards, it will be occupied in the
+/// resulting bitboard. Both bitboards must have the same width and height.
+/// ```
+/// 010     000     010
+/// 010 and 111 --> 101
+/// 010     000     010
+/// ```
+pub fn bitboard_xor(
+  bitboard_1: Bitboard,
+  bitboard_2: Bitboard,
+) -> BitboardResult {
+  case validate_equal_dimensions(bitboard_1, bitboard_2) {
+    Error(err) -> Error(err)
+    Ok(_) ->
+      Ok(
+        Bitboard(
+          ..bitboard_1,
+          val: int.bitwise_exclusive_or(bitboard_1.val, bitboard_2.val),
+        ),
+      )
+  }
+}
+
 /// Performs the `not` operation on a bitboard. All occupied squares will become unoccupied,
 /// and vice versa.
 ///
