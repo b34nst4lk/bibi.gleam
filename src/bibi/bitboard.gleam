@@ -576,11 +576,15 @@ pub fn bitboard_not(bitboard: Bitboard) -> Bitboard {
 pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_north by must be >= 0"))
+  Ok(shift_north_unvalidated(bitboard, i))
+}
+
+fn shift_north_unvalidated(bitboard: Bitboard, by i: Int) -> Bitboard {
   let val =
     bitboard.val
     |> int.bitwise_shift_left(i * bitboard.width)
     |> int.bitwise_and(int_full_mask(bitboard))
-  Ok(Bitboard(..bitboard, val: val))
+  Bitboard(..bitboard, val: val)
 }
 
 /// Shifts the entire board towards the south by `i`
@@ -594,21 +598,25 @@ pub fn shift_north(bitboard: Bitboard, by i: Int) -> BitboardResult {
 pub fn shift_south(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_south by must be >= 0"))
+  Ok(shift_south_unvalidated(bitboard, i))
+}
+
+fn shift_south_unvalidated(bitboard: Bitboard, by i: Int) -> Bitboard {
   let val =
     bitboard.val
     |> int.bitwise_shift_right(i * bitboard.width)
-  Ok(Bitboard(..bitboard, val: val))
+  Bitboard(..bitboard, val: val)
 }
 
 /// Shifts the entire board towards the west by `i`. Note that westwards
 /// shifts will result in westmost occupied squares to be removed completely
 ///
 /// i.e. shift_west by 1
-/// ````
+/// ```
 /// 111    110
 /// 000 -> 000
 /// 000    000
-/// ````
+/// ```
 pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
   use <- bool.guard(i < 0, Error("shift_west by must be >= 0"))
@@ -617,6 +625,10 @@ pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
     Error("shift_west by must be < bitboard.width"),
   )
 
+  Ok(shift_west_unvalidated(bitboard, i))
+}
+
+fn shift_west_unvalidated(bitboard, by i) -> Bitboard {
   let mask =
     list.range(0, i - 1)
     |> list.fold(0, fn(m, i) {
@@ -625,26 +637,31 @@ pub fn shift_west(bitboard: Bitboard, by i: Int) -> BitboardResult {
     })
   let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
   let val = updated_val |> int.bitwise_shift_right(i)
-  Ok(Bitboard(..bitboard, val: val))
+  Bitboard(..bitboard, val: val)
 }
 
 /// Shifts the entire board towards the east by `i`. Note that eastwards
 /// shifts will result in eastmost occupied squares to be removed completely
 ///
 /// i.e. shift_east by 1
-/// ````
+/// ```
 /// 111    011
 /// 000 -> 000
 /// 000    000
-/// ````
+/// ```
 pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i >= bitboard.width, Ok(Bitboard(..bitboard, val: 0)))
   use <- bool.guard(i < 0, Error("shift_east by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.width,
     Error("shift_east by must be < bitboard.width"),
   )
 
+  Ok(shift_east_unvalidated(bitboard, i))
+}
+
+fn shift_east_unvalidated(bitboard: Bitboard, by i: Int) -> Bitboard {
   let mask =
     list.range(bitboard.width - 1, bitboard.width - i)
     |> list.fold(0, fn(m, i) {
@@ -653,7 +670,75 @@ pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
     })
   let updated_val = bitboard.val - int.bitwise_and(mask, bitboard.val)
   let val = updated_val |> int.bitwise_shift_left(i)
-  Ok(Bitboard(..bitboard, val: val))
+  Bitboard(..bitboard, val: val)
+}
+
+/// Shifts the entire boards towards the northeast by `i`.
+///
+/// i.e. shift_northeast by 1
+/// ```
+/// 001    001
+/// 011 -> 000
+/// 000    000
+/// ```
+pub fn shift_northeast(bitboard: Bitboard, by i: Int) -> BitboardResult {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_northeast by must be >= 0"))
+  bitboard
+  |> shift_east_unvalidated(i)
+  |> shift_north_unvalidated(i)
+  |> Ok
+}
+
+/// Shifts the entire boards towards the northwest by `i`.
+///
+/// i.e. shift_northwest by 1
+/// ```
+/// 001    110
+/// 011 -> 000
+/// 000    000
+/// ```
+pub fn shift_northwest(bitboard: Bitboard, by i: Int) -> BitboardResult {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_northwest by must be >= 0"))
+  bitboard
+  |> shift_west_unvalidated(i)
+  |> shift_north_unvalidated(i)
+  |> Ok
+}
+
+/// Shifts the entire boards towards the southeast by `i`.
+///
+/// i.e. shift_southeast by 1
+/// ```
+/// 001    000
+/// 011 -> 000
+/// 000    001
+/// ```
+pub fn shift_southeast(bitboard: Bitboard, by i: Int) -> BitboardResult {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_southeast by must be >= 0"))
+  bitboard
+  |> shift_east_unvalidated(i)
+  |> shift_south_unvalidated(i)
+  |> Ok
+}
+
+/// Shifts the entire boards towards the southwest by `i`.
+///
+/// i.e. shift_southwest by 1
+/// ```
+/// 001    000
+/// 011 -> 010
+/// 000    110
+/// ```
+pub fn shift_southwest(bitboard: Bitboard, by i: Int) -> BitboardResult {
+  use <- bool.guard(i == 0, Ok(bitboard))
+  use <- bool.guard(i < 0, Error("shift_southwest by must be >= 0"))
+  bitboard
+  |> shift_west_unvalidated(i)
+  |> shift_south_unvalidated(i)
+  |> Ok
 }
 
 /// Flips a bitboard vertically
