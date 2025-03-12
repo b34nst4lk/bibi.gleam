@@ -651,7 +651,6 @@ fn shift_west_unvalidated(bitboard, by i) -> Bitboard {
 /// ```
 pub fn shift_east(bitboard: Bitboard, by i: Int) -> BitboardResult {
   use <- bool.guard(i == 0, Ok(bitboard))
-  use <- bool.guard(i >= bitboard.width, Ok(Bitboard(..bitboard, val: 0)))
   use <- bool.guard(i < 0, Error("shift_east by must be >= 0"))
   use <- bool.guard(
     i >= bitboard.width,
