@@ -384,7 +384,7 @@ pub fn successfully_apply_not_on_bitboard_test() {
   })
 }
 
-// Test shift down
+// Test shift south
 pub fn successfully_shift_south_bitboard_test() {
   let test_cases = [
     #(3, 3, "111000000", 2, "000000111"),
@@ -414,7 +414,7 @@ pub fn fail_to_shift_south_bitboard_test() {
   })
 }
 
-// Test shift up
+// Test shift north
 pub fn successfully_shift_north_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "111000000"),
@@ -443,7 +443,7 @@ pub fn fail_to_shift_north_bitboard_test() {
   })
 }
 
-// Test shift left
+// Test shift west
 pub fn successfully_shift_west_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "000000001"),
@@ -476,7 +476,7 @@ pub fn fail_to_shift_west_bitboard_test() {
   })
 }
 
-//Test shift right
+//Test shift east
 pub fn successfully_shift_east_bitboard_test() {
   let test_cases = [
     #(3, 3, "000000111", 2, "000000100"),
@@ -495,16 +495,136 @@ pub fn successfully_shift_east_bitboard_test() {
 }
 
 pub fn fail_to_shift_east_bitboard_test() {
-  let test_cases = [
-    #(3, 3, "000000111", 10, "shift_east by must be < bitboard.width"),
-    #(3, 3, "000000111", 3, "shift_east by must be < bitboard.width"),
-    #(3, 3, "000000111", -1, "shift_east by must be >= 0"),
-  ]
+  let test_cases = [#(3, 3, "000000111", -1, "shift_east by must be >= 0")]
   test_cases
   |> list.map(fn(test_case) {
     let assert Ok(b) =
       bitboard.from_base2(test_case.0, test_case.1, test_case.2)
     let result = bitboard.shift_east(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test shift northeast
+pub fn successfully_shift_northeast_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000010000", 0, "000010000"),
+    #(3, 3, "000010000", 1, "100000000"),
+    #(3, 3, "000010000", 2, "000000000"),
+    #(3, 4, "000010000000", 1, "100000000000"),
+    #(3, 4, "000011000000", 1, "110000000000"),
+    #(4, 3, "000000000001", 1, "000000100000"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_northeast(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_northeast_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_northeast by must be >= 0")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_northeast(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test shift northwest
+pub fn successfully_shift_northwest_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000010000", 0, "000010000"),
+    #(3, 3, "000010000", 1, "001000000"),
+    #(3, 3, "000010000", 2, "000000000"),
+    #(3, 4, "000010000000", 1, "001000000000"),
+    #(3, 4, "000011000000", 1, "001000000000"),
+    #(4, 3, "000000000100", 1, "000000100000"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_northwest(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_northwest_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_northwest by must be >= 0")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_northwest(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test shift southeast
+pub fn successfully_shift_southeast_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000010000", 0, "000010000"),
+    #(3, 3, "000010000", 1, "000000100"),
+    #(3, 3, "000010000", 2, "000000000"),
+    #(3, 4, "000010000000", 1, "000000100000"),
+    #(3, 4, "000011000000", 1, "000000110000"),
+    #(4, 3, "000000100000", 1, "000000000100"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_southeast(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_southeast_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_southeast by must be >= 0")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_southeast(b, test_case.3)
+    should.equal(result, Error(test_case.4))
+  })
+}
+
+// Test shift southwest
+pub fn successfully_shift_southwest_bitboard_test() {
+  let test_cases = [
+    #(3, 3, "000010000", 0, "000010000"),
+    #(3, 3, "000010000", 1, "000000001"),
+    #(3, 3, "000010000", 2, "000000000"),
+    #(3, 4, "000010000000", 1, "000000001000"),
+    #(3, 4, "000011000000", 1, "000000001000"),
+    #(4, 3, "000000100000", 1, "000000000001"),
+  ]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.4, 2)
+    let assert Ok(updated_bitboard) = bitboard.shift_southwest(b, test_case.3)
+    should.equal(updated_bitboard.val, expected)
+  })
+}
+
+pub fn fail_to_shift_southwest_bitboard_test() {
+  let test_cases = [#(3, 3, "000000111", -1, "shift_southwest by must be >= 0")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_base2(test_case.0, test_case.1, test_case.2)
+    let result = bitboard.shift_southwest(b, test_case.3)
     should.equal(result, Error(test_case.4))
   })
 }
