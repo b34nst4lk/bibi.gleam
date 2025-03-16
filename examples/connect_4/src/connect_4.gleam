@@ -1,14 +1,13 @@
 import gleam/io
-
 import gleam/list
 import gleam/order
 import gleam/string
 
 import bibi/bitboard as b
 
-const width = 3
+const width = 7
 
-const height = 3
+const height = 6
 
 pub type Move =
   Int
@@ -48,22 +47,28 @@ pub fn to_string(game: Game) -> String {
       }
       case i % width {
         0 -> #(char, board)
-        1 -> #(line <> " | " <> char, board)
-        2 -> #("", [line <> " | " <> char, ..board])
+        1 | 2 | 3 | 4 | 5 -> #(line <> " | " <> char, board)
+        6 -> #("", [line <> " | " <> char, ..board])
 
         _ -> #("", [])
       }
     })
 
   output.1
-  |> string.join("\n- + - + -\n")
+  |> string.join("\n- + - + - + - + - + - + -\n")
 }
 
-pub fn update_turn(t: Turn, next_move: Move) {
-  let assert Ok(bitboard_of_move) = b.from_square(width, height, next_move)
-  let assert Ok(updated_bitboard) = b.bitboard_or(t.b, bitboard_of_move)
+pub fn update_turn(g: Game, next_move: Move) {
+  let assert Ok(full_board) = b.bitboard_or(g.active.b, g.inactive.b)
+  let assert Ok(mask) = b.file(full_board, next_move)
+  let assert Ok(col) = b.bitboard_and(full_board, mask)
+  let assert Ok(empty_slots) = b.bitboard_xor(col, mask)
+  let assert Ok(square) = empty_slots |> b.to_squares |> list.last
 
-  case t {
+  let assert Ok(bitboard_of_move) = b.from_square(width, height, square)
+  let assert Ok(updated_bitboard) = b.bitboard_or(g.active.b, bitboard_of_move)
+
+  case g.active {
     X(_, strategy) -> X(updated_bitboard, strategy)
     O(_, strategy) -> O(updated_bitboard, strategy)
   }
@@ -73,16 +78,19 @@ pub type Game {
   Game(active: Turn, inactive: Turn)
 }
 
-pub fn new_game() -> Game {
-  let assert Ok(x) = b.new(width, height)
-  let assert Ok(o) = b.new(width, height)
-  Game(active: X(x, minimax), inactive: O(o, minimax))
-}
-
 fn available_moves(game: Game) -> List(Move) {
   let assert Ok(full_board) = b.bitboard_or(game.active.b, game.inactive.b)
-  let available_board = b.bitboard_not(full_board)
-  b.to_squares(available_board)
+  let moves =
+    list.range(0, width - 1)
+    |> list.fold([], fn(moves, i: Int) {
+      let assert Ok(mask) = b.file(game.active.b, i)
+      let assert Ok(file) = b.bitboard_and(full_board, mask)
+      case file != mask {
+        True -> list.append(moves, [i])
+        False -> moves
+      }
+    })
+  moves
 }
 
 pub fn random(game: Game) -> Move {
@@ -90,30 +98,33 @@ pub fn random(game: Game) -> Move {
   next_move
 }
 
-fn check_win(b: b.Bitboard) -> Bool {
-  [
-    b.rank(b, 0),
-    b.rank(b, 1),
-    b.rank(b, 2),
-    b.file(b, 0),
-    b.file(b, 1),
-    b.file(b, 2),
-    b.diagonal(b, 2),
-    b.antidiagonal(b, 2),
-  ]
-  |> list.map(fn(mask_result) {
-    let assert Ok(mask) = mask_result
-    let assert Ok(masked) = b.bitboard_and(mask, b)
+fn check_consecutive_pieces_in_one_direction(
+  turn: Turn,
+  shift: fn(b.Bitboard, Int) -> Result(b.Bitboard, String),
+  iterations: Int,
+) -> Bool {
+  let final_board =
+    list.range(0, iterations - 1)
+    |> list.fold(turn.b, fn(board, i) {
+      let assert Ok(shifted_board) = shift(turn.b, i)
+      let assert Ok(board) = b.bitboard_and(board, shifted_board)
+      board
+    })
+  final_board.val > 0
+}
 
-    masked == mask
+fn check_win(turn: Turn) -> Bool {
+  [b.shift_east, b.shift_north, b.shift_northeast, b.shift_northwest]
+  |> list.map(fn(shift) {
+    check_consecutive_pieces_in_one_direction(turn, shift, 4)
   })
   |> list.any(fn(b) { b })
 }
 
 pub fn has_ended(game: Game) -> GameEnd {
-  let active_is_winner = check_win(game.active.b)
+  let active_is_winner = check_win(game.active)
 
-  let inactive_is_winner = check_win(game.inactive.b)
+  let inactive_is_winner = check_win(game.inactive)
 
   case active_is_winner, inactive_is_winner {
     True, False -> Winner(game, game.active)
@@ -127,7 +138,7 @@ pub fn has_ended(game: Game) -> GameEnd {
 }
 
 pub fn update_game(game: Game, move: Move) {
-  let updated_turn = update_turn(game.active, move)
+  let updated_turn = update_turn(game, move)
   Game(active: game.inactive, inactive: updated_turn)
 }
 
@@ -142,13 +153,6 @@ pub fn run(game: Game, round: Int) -> GameEnd {
   }
 }
 
-pub fn simulate_game() {
-  let result = run(new_game(), 0)
-  io.println("result")
-  io.debug(result)
-  io.print(to_string(result.game))
-}
-
 /// strategies
 fn score(game_end: GameEnd, depth: Int) -> Int {
   case game_end {
@@ -157,8 +161,8 @@ fn score(game_end: GameEnd, depth: Int) -> Int {
   }
 }
 
-pub fn minimax(game: Game) {
-  let move = minimax_iter(game, 0, to_char(game.active)).0
+pub fn minimax(game: Game, max_depth: Int) {
+  let move = minimax_iter(game, 0, to_char(game.active), max_depth).0
   move
 }
 
@@ -173,8 +177,14 @@ fn compare_moves(move1: #(Move, Int), move2: #(Move, Int)) -> order.Order {
   }
 }
 
-fn minimax_iter(game: Game, depth: Int, player: String) -> #(Move, Int) {
+fn minimax_iter(
+  game: Game,
+  depth: Int,
+  player: String,
+  max_depth: Int,
+) -> #(Move, Int) {
   // Get the score of each move
+
   let moves_and_scores =
     available_moves(game)
     |> list.fold([], fn(scores, move) {
@@ -188,7 +198,11 @@ fn minimax_iter(game: Game, depth: Int, player: String) -> #(Move, Int) {
             False -> -score(has_game_ended, depth)
           }
         Draw(_) -> 0
-        NotEnded(_) -> minimax_iter(updated_game, depth + 1, player).1
+        NotEnded(_) ->
+          case depth >= max_depth {
+            False -> minimax_iter(updated_game, depth + 1, player, max_depth).1
+            True -> 0
+          }
       }
       [#(move, score), ..scores]
     })
@@ -201,9 +215,26 @@ fn minimax_iter(game: Game, depth: Int, player: String) -> #(Move, Int) {
         False -> order.negate(compare_moves(move1, move2))
       }
     })
-  best_move
+
+  let assert Ok(random_best_move) =
+    moves_and_scores
+    |> list.filter(fn(move_and_score) { move_and_score.1 == best_move.1 })
+    |> list.shuffle
+    |> list.first
+
+  random_best_move
+}
+
+pub fn new_game() -> Game {
+  let assert Ok(x) = b.new(width, height)
+  let assert Ok(o) = b.new(width, height)
+  Game(active: X(x, minimax(_, 5)), inactive: O(o, random))
+  // minimax(_, 3)))
 }
 
 pub fn main() {
-  simulate_game()
+  let result = run(new_game(), 0)
+  io.println("result")
+  io.debug(result)
+  io.print(to_string(result.game))
 }
