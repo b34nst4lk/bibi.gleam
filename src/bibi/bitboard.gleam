@@ -212,6 +212,38 @@ pub fn from_square(width, height, square) -> BitboardResult {
   Ok(Bitboard(width, height, int.bitwise_shift_left(1, square)))
 }
 
+/// Create a bitboard of a given with and height, and a list of squares
+///
+/// i.e. `from_square(3, 3, [0, 1, 2])` --> `Bitboard(width: 3, height: 3, val: 7)`
+///
+/// Squares are indexed from bottom left to top right. A 3 by 3 bitboard will be indexed as follows
+/// ```
+/// 6 7 8
+/// 3 4 5
+/// 0 1 2
+/// ```
+pub fn from_squares(width, height, squares: List(Int)) -> BitboardResult {
+  use <- bool.guard(width < 0, Error("width must be positive"))
+  use <- bool.guard(height < 0, Error("height must be positive"))
+  use <- bool.guard(
+    list.any(squares, fn(square) { square > width * height }),
+    Error(
+      "squares must be less than width ("
+      <> int.to_string(width)
+      <> ") *"
+      <> "height ("
+      <> int.to_string(height)
+      <> ")",
+    ),
+  )
+  squares
+  |> list.fold(0, fn(b, square) {
+    int.bitwise_or(b, int.bitwise_shift_left(1, square))
+  })
+  |> Bitboard(width: width, height: height)
+  |> Ok
+}
+
 /// Converts a bitboard into a width * height, breakpoint separated string of 1s and 0s
 ///
 /// i.e. `to_string(Bitboard(width: 3, height: 3, val: 2))` -->

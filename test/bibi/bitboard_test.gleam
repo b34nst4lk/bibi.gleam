@@ -84,6 +84,30 @@ pub fn fail_to_create_bitboard_test_from_coords_list() {
   })
 }
 
+// Test converting bitboard from square
+pub fn successfully_create_bitboard_from_square_test() {
+  let test_cases = [#(3, 3, 0, "000000001"), #(3, 3, 1, "000000010")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_square(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.3, 2)
+    should.equal(b.val, expected)
+  })
+}
+
+// Test converting bitboard from squares
+pub fn successfully_create_bitboard_from_squares_test() {
+  let test_cases = [#(3, 3, [0, 1, 2], "000000111")]
+  test_cases
+  |> list.map(fn(test_case) {
+    let assert Ok(b) =
+      bitboard.from_squares(test_case.0, test_case.1, test_case.2)
+    let assert Ok(expected) = int.base_parse(test_case.3, 2)
+    should.equal(b.val, expected)
+  })
+}
+
 // Test converting bitboard to string representation
 pub fn successfully_bitboard_to_string_test() {
   let test_cases = [
